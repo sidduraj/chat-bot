@@ -1,4 +1,5 @@
 const express = require("express");
+const serverless = require("serverless-http");
 const axios = require("axios");
 const cors = require("cors");
 const fileUpload = require("express-fileupload");
@@ -93,3 +94,6 @@ app.put("/uploadImage", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`server listening on port ${PORT}`);
 });
+
+module.exports = app;
+module.exports.handler = serverless(app);
