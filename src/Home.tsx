@@ -3,6 +3,8 @@ import {
   TableContainer,
   Table,
   TableBody,
+  TableFooter,
+  TablePagination,
   TextField,
   TableCell,
   TableHead,
@@ -23,7 +25,13 @@ import {
   ListItemIcon,
   Container,
   Pagination,
+  IconButton,
+  useTheme
 } from "@mui/material";
+import FirstPageIcon from '@mui/icons-material/FirstPage';
+import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
+import LastPageIcon from '@mui/icons-material/LastPage';
 import Logo from "./Logo";
 import { API_BASE_URL, TOKEN_NAME } from "./const";
 import { useNavigate } from "react-router-dom";
@@ -68,6 +76,82 @@ function a11yProps(index: number) {
   };
 }
 
+
+interface TablePaginationActionsProps {
+  count: number;
+  page: number;
+  rowsPerPage: number;
+  onPageChange: (
+    event: React.MouseEvent<HTMLButtonElement>,
+    newPage: number,
+  ) => void;
+}
+
+function TablePaginationActions(props: TablePaginationActionsProps) {
+  const theme = useTheme();
+  const { count, page, rowsPerPage, onPageChange } = props;
+
+  const handleFirstPageButtonClick = (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    onPageChange(event, 0);
+  };
+
+  const handleBackButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    onPageChange(event, page - 1);
+  };
+
+  const handleNextButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    onPageChange(event, page + 1);
+  };
+
+  const handleLastPageButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    onPageChange(event, Math.max(0, Math.ceil(count / rowsPerPage) - 1));
+  };
+
+  return (
+    <Box sx={{ flexShrink: 0, ml: 2.5 }}>
+      <IconButton
+        onClick={handleFirstPageButtonClick}
+        disabled={page === 0}
+        aria-label="first page"
+      >
+        {theme.direction === 'rtl' ? <LastPageIcon /> : <FirstPageIcon />}
+      </IconButton>
+      <IconButton
+        onClick={handleBackButtonClick}
+        disabled={page === 0}
+        aria-label="previous page"
+      >
+        {theme.direction === 'rtl' ? <KeyboardArrowRight /> : <KeyboardArrowLeft />}
+      </IconButton>
+      <IconButton
+        onClick={handleNextButtonClick}
+        disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+        aria-label="next page"
+      >
+        {theme.direction === 'rtl' ? <KeyboardArrowLeft /> : <KeyboardArrowRight />}
+      </IconButton>
+      <IconButton
+        onClick={handleLastPageButtonClick}
+        disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+        aria-label="last page"
+      >
+        {theme.direction === 'rtl' ? <FirstPageIcon /> : <LastPageIcon />}
+      </IconButton>
+    </Box>
+  );
+}
+
+
+ interface phoneRow {
+  unicodes: string;
+  wintypes: string;
+  upi: string;
+  trump: string;
+  dateTime: string;
+
+}
 export default function BasicTabs() {
   const [value, setValue] = React.useState(0);
   const [SearchCode, setSearchCode] = React.useState("");
@@ -76,7 +160,28 @@ export default function BasicTabs() {
   const [drawerOpen, setDrawerOpen] = useState(true);
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
+  
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rows, setRows] = useState<phoneRow[]>([])
 
+  // Avoid a layout jump when reaching the last page with empty rows.
+  const emptyRows =
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+
+  const handleChangePage = (
+    event: React.MouseEvent<HTMLButtonElement> | null,
+    newPage: number,
+  ) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
@@ -204,46 +309,69 @@ export default function BasicTabs() {
                     setSearchContact(event.target.value);
                   }}
                 />
+                <Button variant="contained" onClick={()=> {
+                  setRows([{ unicodes: "Sid", wintypes: "123123123123", upi:"asdf",trump:"asdfa",dateTime:"asdfa" }])
+                }}>Contained</Button>
               </Box>
+
+
+              <TableContainer component={Paper}>
+      <Table sx={{ minWidth: 650 }} aria-label="simple table">
+        <TableHead>
+          <TableRow>
+            <TableCell>unicodes</TableCell>
+            <TableCell align="right">Win Types</TableCell>
+            <TableCell align="right">upi</TableCell>
+            <TableCell align="right">trump</TableCell>
+            <TableCell align="right">date and time</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {
+                  rows.map((row) => (
+            <TableRow
+              key={row.unicodes}
+              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+            >
+              <TableCell component="th" scope="row">
+                {row.unicodes}
+              </TableCell>
+              <TableCell align="right">{row.wintypes}</TableCell>
+              <TableCell align="right">{row.upi}</TableCell>
+              <TableCell align="right">{row.trump}</TableCell>
+              <TableCell align="right">{row.dateTime}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, { label: 'All', value: -1 }]}
+              colSpan={3}
+              count={rows.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              SelectProps={{
+                inputProps: {
+                  'aria-label': 'rows per page',
+                },
+                native: true,
+              }}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              ActionsComponent={TablePaginationActions}
+            />
+          </TableRow>
+        </TableFooter>
+      </Table>
+    </TableContainer>
               <div
                 style={{
                   display: "flex",
                   flexWrap: "wrap",
                 }}
               >
-                {[{ name: "Sid", phone: "123123123123" }]
-                  .filter(
-                    (contact) =>
-                      contact.name
-                        .toLowerCase()
-                        .includes(SearchContact.toLowerCase()) ||
-                      contact.phone.includes(SearchContact)
-                  )
-                  .map((contact) => {
-                    return (
-                      <Card
-                        variant="outlined"
-                        style={{
-                          margin: "0 1rem 1rem 0",
-                          padding: "1rem",
-                          minWidth: "20rem",
-                        }}
-                      >
-                        <CardContent>
-                          <Typography
-                            sx={{ fontSize: 14 }}
-                            color="text.secondary"
-                            gutterBottom
-                          >
-                            {contact.name}
-                          </Typography>
-                          <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                            {contact.phone}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+
               </div>
             </div>
           </>
